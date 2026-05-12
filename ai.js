@@ -66,20 +66,25 @@ const AI = (() => {
 
         const textPart = userText ? `用户同时说："${userText}"` : '';
 
-        const prompt = `请分析这张图片中的食物并估算热量，返回合法JSON（不含其他文字）：
+        const forcedItems = textPart
+            ? `\n\n【强制要求】用户说了："${userText}"，其中提到的每一种食物都必须出现在 items 列表里，即使图片里看不到。漏掉任何一种都是错误。`
+            : '';
+
+        const prompt = `分析图片中的食物，返回合法JSON（不含其他文字）：
 
 {
   "type": "food",
-  "message": "识别结果说明（中文，不超过30字）",
+  "message": "简短说明（中文，不超过30字）",
   "items": [{ "name": "食物名", "amount": "估算分量", "calories": 整数 }]
 }
 
-严格要求：
-1. 识别图片中所有可见食物，每种食物单独列一条
-2. ${textPart ? `用户文字中提到的食物【必须全部加入列表】，即使图片中看不到：${textPart}` : '仅识别图片内容'}
-3. 只列出实际存在的食物，不要凭空添加图片中没有、用户也没提到的食材
-4. 按中国食物热量标准估算，calories 必须是整数
-5. 今日已摄入${consumed}kcal，目标${target}kcal，剩余${remaining}kcal`;
+步骤：
+第一步：识别图片中所有可见食物，每种单独一条加入 items。
+第二步：${textPart ? `用户文字提到了"${userText}"，将其中每一种食物逐一检查，若 items 里没有则【立即补充进去】，绝对不能遗漏。` : '无用户文字，仅识别图片。'}
+第三步：删除 items 中既不在图片里、用户也没提到的食材。
+第四步：按中国标准估算每项 calories（整数）。${forcedItems}
+
+今日已摄入${consumed}kcal，目标${target}kcal，剩余${remaining}kcal`;
 
         const raw = await callQwen(MODEL_VISION, [{
             role: 'user',
