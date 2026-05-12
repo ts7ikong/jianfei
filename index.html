@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#E8EEF5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>减肥助手</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ======= ONBOARDING ======= -->
+<div id="onboarding" class="screen">
+    <div class="onboarding-wrap">
+        <div class="onboarding-header">
+            <div class="ob-logo">🥗</div>
+            <h1>减肥助手</h1>
+            <p>科学热量缺口，健康瘦身</p>
+        </div>
+
+        <div class="steps-container">
+            <!-- Step 1 -->
+            <div class="step active" data-step="1">
+                <h2>基本信息</h2>
+                <div class="form-group">
+                    <label>你的名字</label>
+                    <input type="text" id="ob-name" placeholder="叫我什么？" maxlength="10" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>性别</label>
+                    <div class="radio-group">
+                        <label class="radio-option active" data-val="male">男</label>
+                        <label class="radio-option" data-val="female">女</label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>年龄</label>
+                        <input type="number" id="ob-age" placeholder="岁" min="10" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>身高 cm</label>
+                        <input type="number" id="ob-height" placeholder="cm" min="100" max="250">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>当前体重 kg</label>
+                    <input type="number" id="ob-weight" placeholder="kg" min="30" max="300" step="0.1">
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step" data-step="2">
+                <h2>日常活动量</h2>
+                <p class="step-hint">选择最接近你日常状态的选项</p>
+                <div class="activity-list">
+                    <label class="activity-item" data-val="1.2">
+                        <span class="act-icon">🛋️</span>
+                        <div class="act-text"><strong>久坐不动</strong><span>几乎不运动，坐班族</span></div>
+                    </label>
+                    <label class="activity-item" data-val="1.375">
+                        <span class="act-icon">🚶</span>
+                        <div class="act-text"><strong>轻度活动</strong><span>每周1-3天散步或轻运动</span></div>
+                    </label>
+                    <label class="activity-item active" data-val="1.55">
+                        <span class="act-icon">🏃</span>
+                        <div class="act-text"><strong>中度活动</strong><span>每周3-5天运动</span></div>
+                    </label>
+                    <label class="activity-item" data-val="1.725">
+                        <span class="act-icon">🏋️</span>
+                        <div class="act-text"><strong>高度活动</strong><span>每周6-7天高强度训练</span></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step" data-step="3">
+                <h2>减肥目标</h2>
+                <div class="tdee-box inset-card">
+                    <span class="tdee-label">你的每日总消耗 (TDEE)</span>
+                    <span class="tdee-val" id="tdee-display">计算中...</span>
+                </div>
+                <p class="step-hint">选择每日热量缺口</p>
+                <div class="deficit-list">
+                    <label class="deficit-item" data-val="300">
+                        <div class="deficit-main">
+                            <strong>-300 kcal/天</strong>
+                            <span>约每月减 0.4 kg</span>
+                        </div>
+                        <span class="badge badge-green">温和</span>
+                    </label>
+                    <label class="deficit-item active" data-val="500">
+                        <div class="deficit-main">
+                            <strong>-500 kcal/天</strong>
+                            <span>约每月减 0.6 kg</span>
+                        </div>
+                        <span class="badge badge-blue">推荐</span>
+                    </label>
+                    <label class="deficit-item" data-val="750">
+                        <div class="deficit-main">
+                            <strong>-750 kcal/天</strong>
+                            <span>约每月减 1 kg</span>
+                        </div>
+                        <span class="badge badge-orange">积极</span>
+                    </label>
+                </div>
+                <div class="target-box inset-card">
+                    <span class="tdee-label">每日目标摄入</span>
+                    <span class="tdee-val primary" id="target-display">--</span>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="step" data-step="4">
+                <h2>AI 助手设置</h2>
+                <p class="step-hint">填入 Claude API Key 后，可以用语音或文字随时记录饮食和运动，AI 自动识别热量</p>
+                <div class="form-group">
+                    <label>Claude API Key</label>
+                    <input type="password" id="ob-apikey" placeholder="sk-ant-..." autocomplete="off">
+                </div>
+                <p class="tip-text">API Key 只保存在本机，不会上传至任何服务器</p>
+                <p class="step-hint" style="margin-top:16px">没有？可以跳过，稍后在设置中添加</p>
+            </div>
+        </div>
+
+        <div class="ob-footer">
+            <button id="ob-back" class="btn-ghost hidden">上一步</button>
+            <div class="step-dots">
+                <span class="dot active"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+            <button id="ob-next" class="btn-primary">下一步</button>
+        </div>
+    </div>
+</div>
+
+<!-- ======= MAIN APP ======= -->
+<div id="app" class="hidden">
+
+    <!-- Page: Today -->
+    <div id="page-today" class="page active">
+        <div class="page-scroll">
+            <header class="app-header">
+                <div>
+                    <div class="greeting" id="greeting-text">你好！</div>
+                    <div class="date-text" id="date-text"></div>
+                </div>
+                <button class="icon-btn" id="btn-weight-checkin" title="体重打卡">⚖️</button>
+            </header>
+
+            <!-- AI Banner -->
+            <div class="ai-banner card hidden" id="ai-banner">
+                <span class="ai-ava">🤖</span>
+                <div class="ai-banner-body">
+                    <strong>AI 建议</strong>
+                    <p id="ai-banner-msg"></p>
+                </div>
+            </div>
+
+            <!-- Calorie Ring -->
+            <div class="ring-card card">
+                <svg class="ring-svg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="gBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#6AB8FF"/>
+                            <stop offset="100%" stop-color="#1A6FFF"/>
+                        </linearGradient>
+                        <linearGradient id="gOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#FFB347"/>
+                            <stop offset="100%" stop-color="#FF6B00"/>
+                        </linearGradient>
+                        <filter id="fShadow">
+                            <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#1A6FFF" flood-opacity="0.3"/>
+                        </filter>
+                    </defs>
+                    <!-- Track -->
+                    <circle cx="110" cy="110" r="88" fill="none" stroke="#D5DCE8" stroke-width="16"/>
+                    <!-- Arc -->
+                    <circle cx="110" cy="110" r="88" fill="none"
+                        stroke="url(#gBlue)" stroke-width="16"
+                        stroke-linecap="round"
+                        stroke-dasharray="553" stroke-dashoffset="553"
+                        transform="rotate(-90 110 110)"
+                        id="calorie-arc" filter="url(#fShadow)"/>
+                    <!-- Over-limit arc (red) -->
+                    <circle cx="110" cy="110" r="88" fill="none"
+                        stroke="#FC8181" stroke-width="16"
+                        stroke-linecap="round"
+                        stroke-dasharray="553" stroke-dashoffset="553"
+                        transform="rotate(-90 110 110)"
+                        id="calorie-arc-over" filter="url(#fShadow)" class="hidden"/>
+                    <!-- Center -->
+                    <text x="110" y="96" text-anchor="middle" class="svg-label">已摄入</text>
+                    <text x="110" y="124" text-anchor="middle" class="svg-val" id="ring-consumed">0</text>
+                    <text x="110" y="142" text-anchor="middle" class="svg-unit">kcal</text>
+                </svg>
+                <div class="ring-stats">
+                    <div class="ring-stat">
+                        <span class="rs-label">目标</span>
+                        <span class="rs-val" id="stat-target">--</span>
+                        <span class="rs-unit">kcal</span>
+                    </div>
+                    <div class="ring-stat green">
+                        <span class="rs-label">运动+</span>
+                        <span class="rs-val" id="stat-burned">0</span>
+                        <span class="rs-unit">kcal</span>
+                    </div>
+                    <div class="ring-stat highlight">
+                        <span class="rs-label">剩余</span>
+                        <span class="rs-val" id="stat-remaining">--</span>
+                        <span class="rs-unit">kcal</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log List -->
+            <div class="log-section">
+                <div class="section-title">今日记录</div>
+                <div class="log-list" id="log-list">
+                    <div class="log-empty" id="log-empty">
+                        <div class="empty-icon">🍽️</div>
+                        <p>还没有记录</p>
+                        <p class="empty-hint">在下方输入框说出你吃了什么</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page: Trend -->
+    <div id="page-trend" class="page">
+        <div class="page-scroll">
+            <header class="app-header">
+                <div class="greeting">趋势</div>
+            </header>
+
+            <div class="card chart-card">
+                <div class="chart-nav">
+                    <button class="icon-btn" id="btn-prev-month">‹</button>
+                    <span id="chart-month-label"></span>
+                    <button class="icon-btn" id="btn-next-month">›</button>
+                </div>
+                <canvas id="weight-chart" height="150"></canvas>
+                <div class="chart-legend">
+                    <span><span class="legend-dot blue"></span>体重 kg</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title" style="margin-bottom:12px">本周达标</div>
+                <div class="weekly-goals" id="weekly-goals"></div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card card">
+                    <span class="sc-label">本周平均摄入</span>
+                    <span class="sc-val" id="stat-avg-intake">--</span>
+                    <span class="sc-unit">kcal/天</span>
+                </div>
+                <div class="stat-card card">
+                    <span class="sc-label">累计热量缺口</span>
+                    <span class="sc-val" id="stat-total-deficit">--</span>
+                    <span class="sc-unit">kcal</span>
+                </div>
+                <div class="stat-card card full">
+                    <span class="sc-label">理论减重</span>
+                    <span class="sc-val large" id="stat-projected-loss">--</span>
+                    <span class="sc-unit">kg（每7700kcal ≈ 1kg）</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page: Settings -->
+    <div id="page-settings" class="page">
+        <div class="page-scroll">
+            <header class="app-header">
+                <div class="greeting">设置</div>
+            </header>
+
+            <div class="card settings-card">
+                <div class="settings-title">个人档案</div>
+                <div class="setting-row">
+                    <label>姓名</label>
+                    <input type="text" id="s-name" class="s-input" maxlength="10">
+                </div>
+                <div class="setting-row">
+                    <label>性别</label>
+                    <select id="s-gender" class="s-input">
+                        <option value="male">男</option>
+                        <option value="female">女</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <label>年龄</label>
+                    <input type="number" id="s-age" class="s-input" min="10" max="100">
+                </div>
+                <div class="setting-row">
+                    <label>身高 cm</label>
+                    <input type="number" id="s-height" class="s-input">
+                </div>
+                <div class="setting-row">
+                    <label>体重 kg</label>
+                    <input type="number" id="s-weight" class="s-input" step="0.1">
+                </div>
+                <div class="setting-row">
+                    <label>活动水平</label>
+                    <select id="s-activity" class="s-input">
+                        <option value="1.2">久坐不动</option>
+                        <option value="1.375">轻度活动</option>
+                        <option value="1.55">中度活动</option>
+                        <option value="1.725">高度活动</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <label>热量缺口</label>
+                    <select id="s-deficit" class="s-input">
+                        <option value="300">-300 kcal（温和）</option>
+                        <option value="500">-500 kcal（推荐）</option>
+                        <option value="750">-750 kcal（积极）</option>
+                    </select>
+                </div>
+                <button class="btn-primary btn-block" id="btn-save-profile">保存档案</button>
+            </div>
+
+            <div class="card settings-card">
+                <div class="settings-title">AI 设置</div>
+                <div class="setting-row">
+                    <label>Claude API Key</label>
+                    <input type="password" id="s-apikey" class="s-input" placeholder="sk-ant-...">
+                </div>
+                <button class="btn-primary btn-block" id="btn-save-apikey">保存</button>
+            </div>
+
+            <div class="card settings-card">
+                <div class="settings-title">云端同步</div>
+                <div class="setting-row">
+                    <label>服务器地址</label>
+                    <input type="url" id="s-server" class="s-input" placeholder="https://your-server.com">
+                </div>
+                <div class="setting-row">
+                    <label>访问密钥</label>
+                    <input type="password" id="s-token" class="s-input" placeholder="访问令牌">
+                </div>
+                <div class="sync-btns">
+                    <button class="btn-secondary" id="btn-sync-up">⬆ 上传到云端</button>
+                    <button class="btn-secondary" id="btn-sync-down">⬇ 从云端恢复</button>
+                </div>
+                <p class="tip-text" id="sync-status"></p>
+            </div>
+
+            <div class="card settings-card">
+                <div class="settings-title">数据管理</div>
+                <div class="sync-btns">
+                    <button class="btn-secondary" id="btn-export">📤 导出数据</button>
+                    <button class="btn-danger" id="btn-clear-data">🗑 清空数据</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Input Bar -->
+    <div id="input-bar">
+        <div class="input-bar-inner">
+            <input type="text" id="chat-input" placeholder="说出你吃了什么，或问 AI..." autocomplete="off">
+            <button class="mic-btn" id="btn-mic" title="语音输入">🎤</button>
+            <button class="send-btn" id="btn-send">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M22 2L11 13M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab Nav -->
+    <nav id="tab-nav">
+        <button class="tab active" data-page="today">
+            <span class="tab-ico">🏠</span>
+            <span class="tab-lbl">今日</span>
+        </button>
+        <button class="tab" data-page="trend">
+            <span class="tab-ico">📈</span>
+            <span class="tab-lbl">趋势</span>
+        </button>
+        <button class="tab" data-page="settings">
+            <span class="tab-ico">⚙️</span>
+            <span class="tab-lbl">设置</span>
+        </button>
+    </nav>
+</div>
+
+<!-- ======= MODALS ======= -->
+
+<!-- Weight Check-in -->
+<div id="modal-weight" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-box card">
+        <h3>体重打卡</h3>
+        <div class="form-group" style="margin-top:16px">
+            <input type="number" id="weight-input" placeholder="输入今日体重 (kg)" step="0.1" min="30" max="300">
+        </div>
+        <div class="modal-btns">
+            <button class="btn-ghost" id="btn-weight-cancel">取消</button>
+            <button class="btn-primary" id="btn-weight-save">确认</button>
+        </div>
+    </div>
+</div>
+
+<!-- AI Response -->
+<div id="modal-ai" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-box card">
+        <div class="ai-resp-head">
+            <span class="ai-ava-lg">🤖</span>
+            <p id="ai-resp-msg"></p>
+        </div>
+        <div id="ai-parsed-items"></div>
+        <div class="modal-btns" id="ai-modal-btns">
+            <button class="btn-ghost" id="btn-ai-cancel">取消</button>
+            <button class="btn-primary" id="btn-ai-confirm">确认记录</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="storage.js"></script>
+<script src="calculator.js"></script>
+<script src="ai.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
