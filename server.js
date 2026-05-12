@@ -50,7 +50,8 @@ function auth(req, res, next) {
     next();
 }
 
-// GitHub API 请求封装（Node v18+ 内置 fetch，无需 node-fetch）
+// GitHub API 请求封装
+const fetch = require('node-fetch');
 async function githubFetch(url, options = {}) {
     return fetch(url, {
         ...options,
