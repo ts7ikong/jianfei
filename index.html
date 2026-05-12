@@ -340,18 +340,13 @@
             </div>
 
             <div class="card settings-card">
-                <div class="settings-title">云端同步（GitHub Gist）</div>
-                <div class="setting-row">
-                    <label>GitHub Token</label>
-                    <input type="password" id="s-github-token" class="s-input" placeholder="ghp_...">
-                </div>
-                <p class="tip-text" style="text-align:left;margin:4px 0 12px">
-                    GitHub → Settings → Developer settings<br>
-                    → Personal access tokens → 勾选 <strong>gist</strong> 权限
+                <div class="settings-title">云端同步</div>
+                <p class="tip-text" style="text-align:left;margin-bottom:14px">
+                    数据加密备份到云端，换手机也不丢失
                 </p>
                 <div class="sync-btns">
-                    <button class="btn-secondary" id="btn-sync-up">⬆ 上传到 Gist</button>
-                    <button class="btn-secondary" id="btn-sync-down">⬇ 从 Gist 恢复</button>
+                    <button class="btn-secondary" id="btn-sync-up">⬆ 上传备份</button>
+                    <button class="btn-secondary" id="btn-sync-down">⬇ 恢复数据</button>
                 </div>
                 <p class="tip-text" id="sync-status"></p>
             </div>

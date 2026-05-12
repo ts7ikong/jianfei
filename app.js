@@ -706,7 +706,9 @@ function loadSettingsPage() {
     if (apiKey) document.getElementById('s-apikey').value = apiKey;
 
     const sync = Storage.getSyncConfig();
-    document.getElementById('s-github-token').value = sync.githubToken || '';
+    if (document.getElementById('s-sync-server')) {
+        document.getElementById('s-sync-server').value = sync.serverUrl || '';
+    }
 }
 
 function bindSettings() {
@@ -757,71 +759,32 @@ function bindSettings() {
     });
 }
 
-// ── Cloud Sync (GitHub Gist) ──────────────────────────────
-const GIST_FILENAME = 'jianfei-data.json';
-const GIST_API = 'https://api.github.com/gists';
-
+// ── Cloud Sync ────────────────────────────────────────────
 function setSyncStatus(msg) {
     document.getElementById('sync-status').textContent = msg;
 }
 
-function getGithubToken() {
-    const token = document.getElementById('s-github-token').value.trim();
-    if (!token) { showToast('请先填写 GitHub Token'); return null; }
+function getServerUrl() {
+    // 优先用设置里填写的地址，其次用 window.location.origin（同域部署）
     const sync = Storage.getSyncConfig();
-    sync.githubToken = token;
-    Storage.setSyncConfig(sync);
-    return token;
+    return (sync.serverUrl || window.location.origin).replace(/\/$/, '');
 }
 
 async function syncUpload() {
-    const token = getGithubToken();
-    if (!token) return;
     setSyncStatus('上传中...');
-
-    const content = JSON.stringify(Storage.exportAll(), null, 2);
-    const headers = {
-        'Authorization': `token ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.github.v3+json',
-    };
+    const userId = Storage.getUserId();
+    const serverUrl = getServerUrl();
 
     try {
-        const sync = Storage.getSyncConfig();
-        let resp, data;
-
-        if (sync.gistId) {
-            // 已有 Gist，直接更新
-            resp = await fetch(`${GIST_API}/${sync.gistId}`, {
-                method: 'PATCH',
-                headers,
-                body: JSON.stringify({ files: { [GIST_FILENAME]: { content } } }),
-            });
-        } else {
-            // 首次上传，创建新 Gist
-            resp = await fetch(GIST_API, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    description: '减肥助手数据备份',
-                    public: false,
-                    files: { [GIST_FILENAME]: { content } },
-                }),
-            });
-        }
-
-        if (!resp.ok) {
-            const err = await resp.json().catch(() => ({}));
-            throw new Error(err.message || `GitHub 返回 ${resp.status}`);
-        }
-
-        data = await resp.json();
-        // 保存 Gist ID 供下次使用
-        sync.gistId = data.id;
-        Storage.setSyncConfig(sync);
-
-        setSyncStatus(`✅ 上传成功 ${new Date().toLocaleTimeString()}（Gist ID: ${data.id.slice(0, 8)}...）`);
-        showToast('✅ 数据已保存到 GitHub Gist');
+        const resp = await fetch(`${serverUrl}/api/backup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, data: Storage.exportAll() }),
+        });
+        const result = await resp.json();
+        if (!resp.ok) throw new Error(result.error || `服务器返回 ${resp.status}`);
+        setSyncStatus(`✅ 上传成功 ${new Date().toLocaleTimeString()}`);
+        showToast('✅ 数据已备份到云端');
     } catch (e) {
         setSyncStatus('❌ 上传失败：' + e.message);
         showToast('上传失败：' + e.message);
@@ -829,45 +792,23 @@ async function syncUpload() {
 }
 
 async function syncDownload() {
-    const token = getGithubToken();
-    if (!token) return;
-
-    const sync = Storage.getSyncConfig();
-    if (!sync.gistId) {
-        showToast('请先上传一次数据，才能恢复');
-        return;
-    }
-
-    if (!confirm('从 GitHub Gist 恢复会覆盖本地数据，确认继续？')) return;
-    setSyncStatus('下载中...');
+    if (!confirm('从云端恢复会覆盖本地数据，确认继续？')) return;
+    setSyncStatus('恢复中...');
+    const userId = Storage.getUserId();
+    const serverUrl = getServerUrl();
 
     try {
-        const resp = await fetch(`${GIST_API}/${sync.gistId}`, {
-            headers: {
-                'Authorization': `token ${token}`,
-                'Accept': 'application/vnd.github.v3+json',
-            },
-        });
-
-        if (!resp.ok) {
-            const err = await resp.json().catch(() => ({}));
-            throw new Error(err.message || `GitHub 返回 ${resp.status}`);
-        }
-
-        const gist = await resp.json();
-        const fileContent = gist.files[GIST_FILENAME]?.content;
-        if (!fileContent) throw new Error('Gist 中找不到备份文件');
-
-        const data = JSON.parse(fileContent);
-        Storage.importAll(data);
-
+        const resp = await fetch(`${serverUrl}/api/restore/${userId}`);
+        const result = await resp.json();
+        if (!resp.ok) throw new Error(result.error || `服务器返回 ${resp.status}`);
+        Storage.importAll(result);
         setSyncStatus(`✅ 恢复成功 ${new Date().toLocaleTimeString()}`);
-        showToast('✅ 数据已从 GitHub Gist 恢复');
+        showToast('✅ 数据已恢复');
         renderTodayPage();
         loadSettingsPage();
     } catch (e) {
-        setSyncStatus('❌ 下载失败：' + e.message);
-        showToast('下载失败：' + e.message);
+        setSyncStatus('❌ 恢复失败：' + e.message);
+        showToast('恢复失败：' + e.message);
     }
 }
 

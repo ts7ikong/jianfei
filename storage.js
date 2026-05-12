@@ -6,6 +6,7 @@ const Storage = (() => {
         LOGS: 'cc_logs',
         API_KEY: 'cc_api_key',
         SYNC: 'cc_sync',
+        USER_ID: 'cc_user_id',
     };
 
     function _get(key) {
@@ -24,8 +25,18 @@ const Storage = (() => {
     function setApiKey(k) { localStorage.setItem(KEYS.API_KEY, k); }
 
     // ── Sync config ──────────────────────────────────────
-    function getSyncConfig() { return _get(KEYS.SYNC) || { githubToken: '', gistId: '' }; }
+    function getSyncConfig() { return _get(KEYS.SYNC) || { serverUrl: '' }; }
     function setSyncConfig(c) { _set(KEYS.SYNC, c); }
+
+    // ── 用户唯一ID（首次自动生成，用于在服务器区分不同用户）──
+    function getUserId() {
+        let id = localStorage.getItem(KEYS.USER_ID);
+        if (!id) {
+            id = (crypto.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`);
+            localStorage.setItem(KEYS.USER_ID, id);
+        }
+        return id;
+    }
 
     // ── Logs ─────────────────────────────────────────────
     function getLogs() { return _get(KEYS.LOGS) || {}; }
@@ -137,6 +148,7 @@ const Storage = (() => {
         getProfile, setProfile,
         getApiKey, setApiKey,
         getSyncConfig, setSyncConfig,
+        getUserId,
         getTodayLog, getDayLog, getLogs,
         addFoodEntry, addExerciseEntry,
         setTodayWeight,
