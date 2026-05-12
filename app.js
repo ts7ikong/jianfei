@@ -289,24 +289,54 @@ function buildContext(profile, dayLog) {
 }
 
 // ── Input Bar ─────────────────────────────────────────────
+let pendingImageDataUrl = null;
+
 function bindInputBar() {
     const input = document.getElementById('chat-input');
     const sendBtn = document.getElementById('btn-send');
     const micBtn = document.getElementById('btn-mic');
+    const camBtn = document.getElementById('btn-camera');
+    const fileInput = document.getElementById('file-camera');
 
     sendBtn.addEventListener('click', () => submitInput(input.value.trim()));
-
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') submitInput(input.value.trim());
     });
 
+    // 相机按钮
+    camBtn.addEventListener('click', () => {
+        if (pendingImageDataUrl) {
+            clearImagePreview();
+        } else {
+            fileInput.click();
+        }
+    });
+
+    // 文件选择完成（拍照或从相册选取）
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        fileInput.value = '';
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            pendingImageDataUrl = ev.target.result;
+            showImagePreview(pendingImageDataUrl);
+            showToast('照片已附加，可补充描述后发送');
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // 移除图片预览
+    document.getElementById('btn-img-remove').addEventListener('click', clearImagePreview);
+
+    // 语音按钮
     micBtn.addEventListener('click', () => {
         if (AI.getIsRecording()) {
             AI.stopVoice();
             micBtn.classList.remove('recording');
             return;
         }
-
         AI.startVoice(
             (text) => {
                 micBtn.classList.remove('recording');
@@ -325,14 +355,32 @@ function bindInputBar() {
     });
 }
 
+function showImagePreview(dataUrl) {
+    const bar = document.getElementById('img-preview-bar');
+    document.getElementById('img-preview').src = dataUrl;
+    bar.classList.remove('hidden');
+    document.getElementById('input-bar').classList.add('has-preview');
+    document.getElementById('btn-camera').classList.add('has-image');
+    document.getElementById('btn-camera').title = '移除图片';
+}
+
+function clearImagePreview() {
+    pendingImageDataUrl = null;
+    document.getElementById('img-preview-bar').classList.add('hidden');
+    document.getElementById('input-bar').classList.remove('has-preview');
+    document.getElementById('btn-camera').classList.remove('has-image');
+    document.getElementById('btn-camera').title = '拍照识别';
+    document.getElementById('img-preview').src = '';
+}
+
 async function submitInput(text) {
-    if (!text) return;
+    if (!text && !pendingImageDataUrl) return;
     const input = document.getElementById('chat-input');
     input.value = '';
     input.blur();
 
     if (!Storage.getApiKey()) {
-        showToast('请先在设置中填写 Claude API Key');
+        showToast('请先在设置中填写通义千问 API Key');
         return;
     }
 
@@ -340,13 +388,24 @@ async function submitInput(text) {
     const dayLog = Storage.getTodayLog();
     const context = buildContext(profile, dayLog);
 
-    // Show loading in modal
-    showAIModal('<div class="ai-loading"><div class="spinner"></div>AI 正在理解...</div>', null, text);
+    const hasImage = !!pendingImageDataUrl;
+    const imageDataUrl = pendingImageDataUrl;
+    if (hasImage) clearImagePreview();
+
+    const loadingMsg = hasImage
+        ? '<div class="ai-loading"><div class="spinner"></div>AI 正在识别图片...</div>'
+        : '<div class="ai-loading"><div class="spinner"></div>AI 正在理解...</div>';
+    showAIModal(loadingMsg);
 
     try {
-        const result = await AI.parseInput(text, context);
+        let result;
+        if (hasImage) {
+            result = await AI.analyzeImage(imageDataUrl, text, context);
+        } else {
+            result = await AI.parseInput(text, context);
+        }
         pendingAIResult = result;
-        renderAIModal(result);
+        renderAIModal(result, hasImage ? imageDataUrl : null);
     } catch (e) {
         closeAIModal();
         showToast(`AI 出错：${e.message}`);
@@ -354,7 +413,7 @@ async function submitInput(text) {
 }
 
 // ── AI Modal ──────────────────────────────────────────────
-function showAIModal(loadingHtml, result, inputText) {
+function showAIModal(loadingHtml) {
     const modal = document.getElementById('modal-ai');
     modal.classList.remove('hidden');
     document.getElementById('ai-resp-msg').innerHTML = loadingHtml || '';
@@ -362,8 +421,12 @@ function showAIModal(loadingHtml, result, inputText) {
     document.getElementById('ai-modal-btns').classList.add('hidden');
 }
 
-function renderAIModal(result) {
-    document.getElementById('ai-resp-msg').innerHTML = escHtml(result.message || '');
+function renderAIModal(result, imageDataUrl) {
+    // 如果有图片，在消息上方显示缩略图
+    const imgHtml = imageDataUrl
+        ? `<img src="${imageDataUrl}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-bottom:12px;">`
+        : '';
+    document.getElementById('ai-resp-msg').innerHTML = imgHtml + escHtml(result.message || '');
 
     const itemsEl = document.getElementById('ai-parsed-items');
     itemsEl.innerHTML = '';

@@ -1,82 +1,105 @@
-/* ai.js — Claude API integration + Web Speech voice input */
+/* ai.js — 通义千问 API + Web Speech 语音输入 + 图片识别 */
 
 const AI = (() => {
-    const MODEL = 'claude-haiku-4-5-20251001';
-    const API_URL = 'https://api.anthropic.com/v1/messages';
+    const API_BASE = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+    const MODEL_TEXT = 'qwen-turbo';      // 文字对话（快速省钱）
+    const MODEL_VISION = 'qwen-vl-plus';  // 图片识别
 
-    // ── Claude API call ──────────────────────────────────
-    async function callClaude(systemPrompt, userMessage, apiKey) {
-        const resp = await fetch(API_URL, {
+    // ── 通用请求 ─────────────────────────────────────────
+    async function callQwen(model, messages, apiKey) {
+        const resp = await fetch(API_BASE, {
             method: 'POST',
             headers: {
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01',
-                'content-type': 'application/json',
-                'anthropic-dangerous-direct-browser-access': 'true',
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                model: MODEL,
-                max_tokens: 1024,
-                system: systemPrompt,
-                messages: [{ role: 'user', content: userMessage }],
-            }),
+            body: JSON.stringify({ model, messages, max_tokens: 1024 }),
         });
 
         if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));
-            throw new Error(err.error?.message || `API 错误 ${resp.status}`);
+            const msg = err.error?.message || err.message || `API 错误 ${resp.status}`;
+            throw new Error(msg);
         }
 
         const data = await resp.json();
-        return data.content[0].text;
+        return data.choices[0].message.content;
     }
 
-    // ── Parse user input ─────────────────────────────────
-    // Returns: { type, items?, exercise?, message, advice? }
+    // ── 解析用户文字输入 ─────────────────────────────────
     async function parseInput(text, context) {
         const { consumed, target, burned, remaining } = context;
-        const system = `你是一个减肥助手AI，帮用户记录饮食和运动，追踪热量缺口。
-回复必须是合法的JSON，不包含任何其他文字。
+        const system = `你是减肥助手AI，帮用户记录饮食和运动，追踪热量缺口。
+只返回合法JSON，不含其他文字。
 
-JSON格式：
+格式：
 {
   "type": "food" | "exercise" | "advice" | "unknown",
-  "message": "对用户说的一句话（简洁，中文）",
-  "items": [{ "name": "食物名", "amount": "数量描述", "calories": 数字 }],
-  "exercise": { "name": "运动名", "duration": 分钟数, "calories": 消耗热量数字 }
+  "message": "对用户说的话（中文，不超过30字）",
+  "items": [{ "name": "食物名", "amount": "数量描述", "calories": 整数 }],
+  "exercise": { "name": "运动名", "duration": 分钟数, "calories": 消耗整数 }
 }
 
 规则：
-- type=food：用户提到吃了东西，items为食物列表（每项calories必须是整数）
-- type=exercise：用户提到运动，填exercise字段
-- type=advice：用户问建议/问能吃什么/问今天状态
-- type=unknown：无法理解
-- 热量估算要合理（中国食物标准，米饭100g约130kcal）
-- message要友好、鼓励，不超过30字`;
+- food：用户提到吃东西，填 items（可多个），calories 必须是整数
+- exercise：用户提到运动，填 exercise
+- advice：用户问建议/问能吃什么/问状态
+- 热量按中国标准估算（米饭100g≈130kcal，鸡蛋1个≈70kcal）
+- message 友好鼓励`;
 
         const userMsg = `用户说："${text}"
-今日已摄入：${consumed} kcal
-今日运动消耗：${burned} kcal
-今日目标：${target} kcal
-今日剩余：${remaining} kcal`;
+今日已摄入：${consumed}kcal，运动消耗：${burned}kcal，目标：${target}kcal，剩余：${remaining}kcal`;
 
-        const raw = await callClaude(system, userMsg, Storage.getApiKey());
+        const raw = await callQwen(MODEL_TEXT, [
+            { role: 'system', content: system },
+            { role: 'user', content: userMsg },
+        ], Storage.getApiKey());
 
-        // Extract JSON even if model wraps it in backticks
         const match = raw.match(/\{[\s\S]*\}/);
-        if (!match) throw new Error('AI返回格式异常');
+        if (!match) throw new Error('AI返回格式异常，请重试');
         return JSON.parse(match[0]);
     }
 
-    // ── Get daily advice ─────────────────────────────────
-    async function getDailyAdvice(context) {
+    // ── 图片 + 文字识别食物 ──────────────────────────────
+    async function analyzeImage(imageDataUrl, userText, context) {
         const { consumed, target, burned, remaining } = context;
-        const system = `你是减肥助手。根据用户今日数据，给出一句简短鼓励或建议（不超过35字，中文，友好积极）。只回复这一句话，不要JSON。`;
-        const msg = `已摄入${consumed}kcal，目标${target}kcal，运动消耗${burned}kcal，剩余${remaining}kcal`;
-        return callClaude(system, msg, Storage.getApiKey());
+
+        const prompt = `请分析这张图片中的食物，估算热量，返回合法JSON（不含其他文字）：
+
+{
+  "type": "food",
+  "message": "识别结果说明（中文，不超过30字）",
+  "items": [{ "name": "食物名", "amount": "估算分量", "calories": 整数 }]
+}
+
+要求：
+- 识别图片中所有可见食物
+- 按中国食物热量标准估算
+- 如果用户补充说明是："${userText || '无'}"，结合说明调整识别
+- 今日已摄入${consumed}kcal，目标${target}kcal，剩余${remaining}kcal`;
+
+        const raw = await callQwen(MODEL_VISION, [{
+            role: 'user',
+            content: [
+                { type: 'image_url', image_url: { url: imageDataUrl } },
+                { type: 'text', text: prompt },
+            ],
+        }], Storage.getApiKey());
+
+        const match = raw.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('图片识别失败，请重试');
+        return JSON.parse(match[0]);
     }
 
-    // ── Voice input ──────────────────────────────────────
+    // ── 每日建议 ─────────────────────────────────────────
+    async function getDailyAdvice(context) {
+        const { consumed, target, burned, remaining } = context;
+        const msg = `已摄入${consumed}kcal，目标${target}kcal，运动消耗${burned}kcal，剩余${remaining}kcal。
+给出一句简短鼓励或建议（不超过35字，中文，只回这一句话）`;
+        return callQwen(MODEL_TEXT, [{ role: 'user', content: msg }], Storage.getApiKey());
+    }
+
+    // ── 语音输入 ─────────────────────────────────────────
     let recognition = null;
     let isRecording = false;
 
@@ -89,30 +112,20 @@ JSON格式：
             onError('当前浏览器不支持语音输入，请使用 Chrome 或 Safari');
             return;
         }
-        if (isRecording) {
-            stopVoice();
-            return;
-        }
+        if (isRecording) { stopVoice(); return; }
 
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SR();
         recognition.lang = 'zh-CN';
         recognition.continuous = false;
         recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
 
-        recognition.onstart = () => {
-            isRecording = true;
-            if (onStart) onStart();
-        };
-
+        recognition.onstart = () => { isRecording = true; if (onStart) onStart(); };
         recognition.onresult = (e) => {
-            const text = e.results[0][0].transcript;
             isRecording = false;
             recognition = null;
-            onResult(text);
+            onResult(e.results[0][0].transcript);
         };
-
         recognition.onerror = (e) => {
             isRecording = false;
             recognition = null;
@@ -123,24 +136,16 @@ JSON格式：
             };
             onError(msgs[e.error] || `语音识别失败: ${e.error}`);
         };
-
-        recognition.onend = () => {
-            isRecording = false;
-            recognition = null;
-        };
-
+        recognition.onend = () => { isRecording = false; recognition = null; };
         recognition.start();
     }
 
     function stopVoice() {
-        if (recognition) {
-            recognition.stop();
-            recognition = null;
-        }
+        if (recognition) { recognition.stop(); recognition = null; }
         isRecording = false;
     }
 
     function getIsRecording() { return isRecording; }
 
-    return { parseInput, getDailyAdvice, startVoice, stopVoice, getIsRecording, isVoiceSupported };
+    return { parseInput, analyzeImage, getDailyAdvice, startVoice, stopVoice, getIsRecording, isVoiceSupported };
 })();

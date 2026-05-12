@@ -115,12 +115,12 @@
             <!-- Step 4 -->
             <div class="step" data-step="4">
                 <h2>AI 助手设置</h2>
-                <p class="step-hint">填入 Claude API Key 后，可以用语音或文字随时记录饮食和运动，AI 自动识别热量</p>
+                <p class="step-hint">填入通义千问 API Key，即可语音/拍照/文字随时记录，AI 自动识别热量</p>
                 <div class="form-group">
-                    <label>Claude API Key</label>
-                    <input type="password" id="ob-apikey" placeholder="sk-ant-..." autocomplete="off">
+                    <label>通义千问 API Key</label>
+                    <input type="password" id="ob-apikey" placeholder="sk-..." autocomplete="off">
                 </div>
-                <p class="tip-text">API Key 只保存在本机，不会上传至任何服务器</p>
+                <p class="tip-text">前往 dashscope.aliyun.com 免费获取 · Key 只存本机</p>
                 <p class="step-hint" style="margin-top:16px">没有？可以跳过，稍后在设置中添加</p>
             </div>
         </div>
@@ -328,11 +328,14 @@
             </div>
 
             <div class="card settings-card">
-                <div class="settings-title">AI 设置</div>
+                <div class="settings-title">AI 设置（通义千问）</div>
                 <div class="setting-row">
-                    <label>Claude API Key</label>
-                    <input type="password" id="s-apikey" class="s-input" placeholder="sk-ant-...">
+                    <label>API Key</label>
+                    <input type="password" id="s-apikey" class="s-input" placeholder="sk-...">
                 </div>
+                <p class="tip-text" style="text-align:left;margin-bottom:8px">
+                    前往 <strong>dashscope.aliyun.com</strong> → API-KEY 管理 获取
+                </p>
                 <button class="btn-primary btn-block" id="btn-save-apikey">保存</button>
             </div>
 
@@ -365,7 +368,13 @@
 
     <!-- Bottom Input Bar -->
     <div id="input-bar">
+        <!-- 图片预览条（拍照后显示） -->
+        <div id="img-preview-bar" class="hidden">
+            <img id="img-preview" src="" alt="预览">
+            <button id="btn-img-remove" class="img-remove-btn">✕</button>
+        </div>
         <div class="input-bar-inner">
+            <button class="cam-btn" id="btn-camera" title="拍照识别">📷</button>
             <input type="text" id="chat-input" placeholder="说出你吃了什么，或问 AI..." autocomplete="off">
             <button class="mic-btn" id="btn-mic" title="语音输入">🎤</button>
             <button class="send-btn" id="btn-send">
@@ -374,6 +383,8 @@
                 </svg>
             </button>
         </div>
+        <!-- 隐藏的文件输入，触发相机 -->
+        <input type="file" id="file-camera" accept="image/*" capture="environment" class="hidden">
     </div>
 
     <!-- Tab Nav -->

@@ -478,10 +478,25 @@ select.s-input { max-width: 160px; }
 }
 #chat-input::placeholder { color: var(--text-secondary); }
 
-.mic-btn {
-    width: 44px; height: 44px;
+.cam-btn {
+    width: 40px; height: 40px;
     border-radius: 50%;
-    font-size: 20px;
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.cam-btn:active { transform: scale(0.93); }
+.cam-btn.has-image {
+    background: rgba(26, 111, 255, 0.12);
+    box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
+}
+
+.mic-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    font-size: 18px;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
     transition: all 0.2s;
@@ -493,6 +508,33 @@ select.s-input { max-width: 160px; }
     animation: pulse 1s infinite;
 }
 @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(255, 78, 78, 0.2); } 50% { box-shadow: 0 0 0 8px rgba(255, 78, 78, 0.1); } }
+
+/* Image preview bar */
+#img-preview-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 14px 0;
+}
+#img-preview {
+    width: 52px; height: 52px;
+    border-radius: 10px;
+    object-fit: cover;
+    box-shadow: 3px 3px 8px var(--shadow-dark), -3px -3px 8px var(--shadow-light);
+}
+.img-remove-btn {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--red);
+    color: white;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(255, 78, 78, 0.4);
+}
+
+/* Adjust input bar height when preview is shown */
+#input-bar.has-preview {
+    height: auto;
+    padding-bottom: 10px;
+}
 
 .send-btn {
     width: 44px; height: 44px;
