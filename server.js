@@ -2,18 +2,19 @@
  * server.js — 减肥助手后端
  * 作为 GitHub Gist 代理，GitHub Token 只存在服务器，用户无感知
  *
- * 安装：npm install express better-sqlite3 cors node-fetch
+ * 安装：npm install express cors node-fetch
  * 启动：GITHUB_TOKEN=ghp_xxx node server.js
  *
  * 环境变量：
  *   PORT=3000
- *   GITHUB_TOKEN=ghp_xxx        (必填，你自己的 GitHub Token，需要 gist 权限)
- *   ACCESS_TOKEN=xxx            (可选，限制谁能访问这个服务器)
+ *   GITHUB_TOKEN=ghp_xxx   (必填，你自己的 GitHub Token，需要 gist 权限)
+ *   ACCESS_TOKEN=xxx        (可选，限制谁能访问这个服务器)
  */
 
 const express = require('express');
-const Database = require('better-sqlite3');
 const cors = require('cors');
+const fetch = require('node-fetch');
+const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
@@ -21,20 +22,19 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN || '';
 const GIST_API = 'https://api.github.com/gists';
 const GIST_FILENAME = 'jianfei-data.json';
+const MAP_FILE = path.join(__dirname, 'mapping.json');
 
 if (!GITHUB_TOKEN) {
     console.warn('⚠️  警告：未设置 GITHUB_TOKEN，云同步功能将无法使用');
 }
 
-// ── SQLite：只存 userId → gistId 的映射，体积极小 ──────────
-const db = new Database(path.join(__dirname, 'mapping.db'));
-db.exec(`
-    CREATE TABLE IF NOT EXISTS user_gists (
-        user_id TEXT PRIMARY KEY,
-        gist_id TEXT NOT NULL,
-        created_at TEXT NOT NULL
-    )
-`);
+// ── 用 JSON 文件存 userId → gistId 映射（替代 SQLite）──────
+function readMap() {
+    try { return JSON.parse(fs.readFileSync(MAP_FILE, 'utf8')); } catch { return {}; }
+}
+function writeMap(map) {
+    fs.writeFileSync(MAP_FILE, JSON.stringify(map, null, 2));
+}
 
 // ── App ───────────────────────────────────────────────────
 const app = express();
@@ -42,7 +42,6 @@ app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// 可选：服务器访问鉴权
 function auth(req, res, next) {
     if (!ACCESS_TOKEN) return next();
     const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
@@ -50,9 +49,7 @@ function auth(req, res, next) {
     next();
 }
 
-// GitHub API 请求封装
-const fetch = require('node-fetch');
-async function githubFetch(url, options = {}) {
+function githubFetch(url, options = {}) {
     return fetch(url, {
         ...options,
         headers: {
@@ -71,12 +68,11 @@ app.post('/api/backup', auth, async (req, res) => {
     if (!GITHUB_TOKEN) return res.status(503).json({ error: '服务器未配置 GitHub Token' });
 
     const content = JSON.stringify({ ...data, _backupAt: new Date().toISOString() }, null, 2);
-    const row = db.prepare('SELECT gist_id FROM user_gists WHERE user_id = ?').get(userId);
+    const map = readMap();
+    let gistId = map[userId];
 
     try {
-        let gistId = row?.gist_id;
         let resp;
-
         if (gistId) {
             resp = await githubFetch(`${GIST_API}/${gistId}`, {
                 method: 'PATCH',
@@ -91,13 +87,12 @@ app.post('/api/backup', auth, async (req, res) => {
                     files: { [GIST_FILENAME]: { content } },
                 }),
             });
-
             if (resp.ok) {
                 const gist = await resp.json();
                 gistId = gist.id;
-                db.prepare('INSERT INTO user_gists (user_id, gist_id, created_at) VALUES (?, ?, ?)')
-                    .run(userId, gistId, new Date().toISOString());
-                return res.json({ ok: true, gistId });
+                map[userId] = gistId;
+                writeMap(map);
+                return res.json({ ok: true });
             }
         }
 
@@ -106,7 +101,7 @@ app.post('/api/backup', auth, async (req, res) => {
             throw new Error(err.message || `GitHub 返回 ${resp.status}`);
         }
 
-        res.json({ ok: true, gistId });
+        res.json({ ok: true });
     } catch (e) {
         console.error('备份失败:', e.message);
         res.status(500).json({ error: e.message });
@@ -118,11 +113,12 @@ app.get('/api/restore/:userId', auth, async (req, res) => {
     const { userId } = req.params;
     if (!GITHUB_TOKEN) return res.status(503).json({ error: '服务器未配置 GitHub Token' });
 
-    const row = db.prepare('SELECT gist_id FROM user_gists WHERE user_id = ?').get(userId);
-    if (!row) return res.status(404).json({ error: '没有找到你的备份，请先上传一次' });
+    const map = readMap();
+    const gistId = map[userId];
+    if (!gistId) return res.status(404).json({ error: '没有找到你的备份，请先上传一次' });
 
     try {
-        const resp = await githubFetch(`${GIST_API}/${row.gist_id}`);
+        const resp = await githubFetch(`${GIST_API}/${gistId}`);
         if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));
             throw new Error(err.message || `GitHub 返回 ${resp.status}`);
@@ -139,7 +135,6 @@ app.get('/api/restore/:userId', auth, async (req, res) => {
     }
 });
 
-// 健康检查
 app.get('/api/health', (req, res) => {
     res.json({ ok: true, githubReady: !!GITHUB_TOKEN });
 });
