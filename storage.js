@@ -72,9 +72,8 @@ const Storage = (() => {
         _saveLogs(logs);
     }
 
-    function addFoodEntry(entry) {
-        // entry: { name, amount, calories, meal }
-        const log = getTodayLog();
+    function addFoodEntry(entry, dateKey) {
+        const log = getDayLog(dateKey || todayKey());
         log.food.push({
             id: Date.now().toString(36),
             time: new Date().toTimeString().slice(0, 5),
@@ -83,9 +82,8 @@ const Storage = (() => {
         _saveDayLog(log);
     }
 
-    function addExerciseEntry(entry) {
-        // entry: { name, duration, calories }
-        const log = getTodayLog();
+    function addExerciseEntry(entry, dateKey) {
+        const log = getDayLog(dateKey || todayKey());
         log.exercise.push({
             id: Date.now().toString(36),
             time: new Date().toTimeString().slice(0, 5),

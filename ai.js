@@ -29,12 +29,14 @@ const AI = (() => {
     // ── 解析用户文字输入 ─────────────────────────────────
     async function parseInput(text, context) {
         const { consumed, target, burned, remaining } = context;
+        const todayStr = new Date().toISOString().slice(0, 10);
         const system = `你是减肥助手AI，帮用户记录饮食和运动，追踪热量缺口。
-只返回合法JSON，不含其他文字。
+只返回合法JSON，不含其他文字。今天是 ${todayStr}。
 
 格式：
 {
   "type": "food" | "exercise" | "advice" | "unknown",
+  "date": "YYYY-MM-DD",
   "message": "对用户说的话（中文，不超过30字）",
   "items": [{ "name": "食物名", "amount": "数量描述", "calories": 整数 }],
   "exercise": { "name": "运动名", "duration": 分钟数, "calories": 消耗整数 }
@@ -44,8 +46,9 @@ const AI = (() => {
 - food：用户提到吃东西，填 items（可多个），calories 必须是整数
 - exercise：用户提到运动，填 exercise
 - advice：用户问建议/问能吃什么/问状态
+- date：用户提到"昨天"则填昨天日期，"前天"填前天，"X月X号/日"按年份${todayStr.slice(0,4)}换算，没提日期则填今天 ${todayStr}
 - 热量按中国标准估算（米饭100g≈130kcal，鸡蛋1个≈70kcal）
-- message 友好鼓励`;
+- message 友好鼓励，若记录的是历史日期需在 message 里说明`;
 
         const userMsg = `用户说："${text}"
 今日已摄入：${consumed}kcal，运动消耗：${burned}kcal，目标：${target}kcal，剩余：${remaining}kcal`;

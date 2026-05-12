@@ -312,6 +312,7 @@ function renderLogList(dayLog) {
             if (type === 'food') Storage.deleteFoodEntry(id);
             else Storage.deleteExerciseEntry(id);
             renderTodayPage();
+            silentSyncUpload();
         });
     });
 }
@@ -575,21 +576,35 @@ function bindModals() {
     document.getElementById('btn-ai-confirm').addEventListener('click', () => {
         if (!pendingAIResult) return;
         const result = pendingAIResult;
+        const recordDate = result.date || Storage.todayKey();
+        const isToday = recordDate === Storage.todayKey();
+        const dateTip = isToday ? '' : `（记录到 ${recordDate}）`;
 
         if (result.type === 'food' && result.items?.length) {
             result.items.forEach(item => {
-                Storage.addFoodEntry({ name: item.name, amount: item.amount || '', calories: item.calories, meal: 'other' });
+                Storage.addFoodEntry({ name: item.name, amount: item.amount || '', calories: item.calories, meal: 'other' }, recordDate);
             });
-            showToast('✅ 饮食已记录');
+            showToast('✅ 饮食已记录' + dateTip);
         } else if (result.type === 'exercise' && result.exercise) {
             const ex = result.exercise;
-            Storage.addExerciseEntry({ name: ex.name, duration: ex.duration || 0, calories: ex.calories });
-            showToast('✅ 运动已记录');
+            Storage.addExerciseEntry({ name: ex.name, duration: ex.duration || 0, calories: ex.calories }, recordDate);
+            showToast('✅ 运动已记录' + dateTip);
         }
 
         closeAIModal();
         renderTodayPage();
         fetchDailyAdvice();
+        silentSyncUpload();
+
+        // 若今天还没记录体重，延迟提示
+        if (isToday && Storage.getTodayLog().weight === null) {
+            setTimeout(() => {
+                document.getElementById('modal-weight').classList.remove('hidden');
+                const profile = Storage.getProfile();
+                if (profile) document.getElementById('weight-input').value = profile.weight || '';
+                document.getElementById('weight-input').focus();
+            }, 800);
+        }
     });
 
     // Weight modal
@@ -614,6 +629,8 @@ function bindModals() {
         Storage.setTodayWeight(val);
         document.getElementById('modal-weight').classList.add('hidden');
         showToast('✅ 体重已记录');
+        renderTodayPage();
+        silentSyncUpload();
     });
 }
 
@@ -818,6 +835,7 @@ function bindSettings() {
         Storage.setProfile(profile);
         showToast('✅ 档案已保存');
         renderTodayPage();
+        silentSyncUpload();
     });
 
     document.getElementById('btn-save-apikey').addEventListener('click', () => {
@@ -935,12 +953,21 @@ async function silentSyncUpload() {
     if (!serverUrl || !Storage.getApiKey()) return;
     const userId = Storage.getUserId();
     try {
-        await fetch(`${serverUrl}/api/backup`, {
+        const resp = await fetch(`${serverUrl}/api/backup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId, data: Storage.exportAll() }),
         });
-    } catch { /* 静默失败，不打扰用户 */ }
+        if (!resp.ok) throw new Error(`服务器返回 ${resp.status}`);
+        setSyncStatusSafe('✅ 已自动同步 ' + new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }));
+    } catch (e) {
+        setSyncStatusSafe('❌ 自动同步失败：' + e.message + '，可手动上传');
+    }
+}
+
+function setSyncStatusSafe(msg) {
+    const el = document.getElementById('sync-status');
+    if (el) el.textContent = msg;
 }
 
 // ── Utilities ─────────────────────────────────────────────
