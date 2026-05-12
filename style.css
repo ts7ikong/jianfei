@@ -618,13 +618,40 @@ select.s-input { max-width: 160px; }
 .parsed-items { display: flex; flex-direction: column; gap: 8px; }
 .parsed-item {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 16px;
+    padding: 10px 14px;
     border-radius: 12px;
     box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
+    gap: 8px;
 }
+.parsed-item-info { flex: 1; min-width: 0; }
 .parsed-item-name { font-size: 14px; font-weight: 600; color: var(--text); }
 .parsed-item-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
 .parsed-item-kcal { font-size: 15px; font-weight: 700; color: var(--primary); }
+
+/* 可编辑食物条目右侧 */
+.parsed-item-right {
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.kcal-input {
+    width: 60px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 14px; font-weight: 700;
+    color: var(--primary);
+    text-align: right;
+    box-shadow: inset 2px 2px 6px var(--shadow-dark), inset -2px -2px 6px var(--shadow-light);
+}
+.kcal-unit { font-size: 12px; color: var(--text-secondary); }
+.item-del-btn {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--bg);
+    color: var(--text-secondary);
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 2px 2px 6px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
+    transition: all 0.15s;
+}
+.item-del-btn:active { color: var(--red); transform: scale(0.9); }
 
 /* Toast */
 .toast {

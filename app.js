@@ -432,17 +432,7 @@ function renderAIModal(result, imageDataUrl) {
     itemsEl.innerHTML = '';
 
     if (result.type === 'food' && result.items?.length) {
-        result.items.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'parsed-item';
-            div.innerHTML = `
-                <div>
-                    <div class="parsed-item-name">${escHtml(item.name)}</div>
-                    <div class="parsed-item-meta">${escHtml(item.amount || '')}</div>
-                </div>
-                <span class="parsed-item-kcal">${item.calories} kcal</span>`;
-            itemsEl.appendChild(div);
-        });
+        renderEditableItems(itemsEl, result);
         document.getElementById('ai-modal-btns').classList.remove('hidden');
         document.getElementById('btn-ai-confirm').textContent = '确认记录';
 
@@ -466,6 +456,54 @@ function renderAIModal(result, imageDataUrl) {
         document.getElementById('btn-ai-confirm').classList.add('hidden');
         document.getElementById('btn-ai-cancel').textContent = '好的';
     }
+}
+
+function renderEditableItems(container, result) {
+    container.innerHTML = '';
+
+    const rebuild = () => {
+        container.innerHTML = '';
+        result.items.forEach((item, idx) => {
+            const div = document.createElement('div');
+            div.className = 'parsed-item';
+            div.innerHTML = `
+                <div class="parsed-item-info">
+                    <div class="parsed-item-name">${escHtml(item.name)}</div>
+                    <div class="parsed-item-meta">${escHtml(item.amount || '')}</div>
+                </div>
+                <div class="parsed-item-right">
+                    <input type="number" class="kcal-input" value="${item.calories}" min="1" max="9999" data-idx="${idx}">
+                    <span class="kcal-unit">kcal</span>
+                    <button class="item-del-btn" data-idx="${idx}">✕</button>
+                </div>`;
+            container.appendChild(div);
+        });
+
+        // 热量编辑
+        container.querySelectorAll('.kcal-input').forEach(input => {
+            input.addEventListener('change', () => {
+                const idx = +input.dataset.idx;
+                const val = parseInt(input.value);
+                if (val > 0) result.items[idx].calories = val;
+            });
+        });
+
+        // 删除条目
+        container.querySelectorAll('.item-del-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = +btn.dataset.idx;
+                result.items.splice(idx, 1);
+                if (result.items.length === 0) {
+                    closeAIModal();
+                    showToast('已取消记录');
+                } else {
+                    rebuild();
+                }
+            });
+        });
+    };
+
+    rebuild();
 }
 
 function closeAIModal() {

@@ -64,7 +64,9 @@ const AI = (() => {
     async function analyzeImage(imageDataUrl, userText, context) {
         const { consumed, target, burned, remaining } = context;
 
-        const prompt = `请分析这张图片中的食物，估算热量，返回合法JSON（不含其他文字）：
+        const textPart = userText ? `用户同时说："${userText}"` : '';
+
+        const prompt = `请分析这张图片中的食物并估算热量，返回合法JSON（不含其他文字）：
 
 {
   "type": "food",
@@ -72,11 +74,12 @@ const AI = (() => {
   "items": [{ "name": "食物名", "amount": "估算分量", "calories": 整数 }]
 }
 
-要求：
-- 识别图片中所有可见食物
-- 按中国食物热量标准估算
-- 如果用户补充说明是："${userText || '无'}"，结合说明调整识别
-- 今日已摄入${consumed}kcal，目标${target}kcal，剩余${remaining}kcal`;
+严格要求：
+1. 识别图片中所有可见食物，每种食物单独列一条
+2. ${textPart ? `用户文字中提到的食物【必须全部加入列表】，即使图片中看不到：${textPart}` : '仅识别图片内容'}
+3. 只列出实际存在的食物，不要凭空添加图片中没有、用户也没提到的食材
+4. 按中国食物热量标准估算，calories 必须是整数
+5. 今日已摄入${consumed}kcal，目标${target}kcal，剩余${remaining}kcal`;
 
         const raw = await callQwen(MODEL_VISION, [{
             role: 'user',
