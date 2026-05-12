@@ -24,7 +24,7 @@ const Storage = (() => {
     function setApiKey(k) { localStorage.setItem(KEYS.API_KEY, k); }
 
     // ── Sync config ──────────────────────────────────────
-    function getSyncConfig() { return _get(KEYS.SYNC) || { server: '', token: '' }; }
+    function getSyncConfig() { return _get(KEYS.SYNC) || { githubToken: '', gistId: '' }; }
     function setSyncConfig(c) { _set(KEYS.SYNC, c); }
 
     // ── Logs ─────────────────────────────────────────────
