@@ -706,9 +706,7 @@ function loadSettingsPage() {
     if (apiKey) document.getElementById('s-apikey').value = apiKey;
 
     const sync = Storage.getSyncConfig();
-    if (document.getElementById('s-sync-server')) {
-        document.getElementById('s-sync-server').value = sync.serverUrl || '';
-    }
+    document.getElementById('s-sync-server').value = sync.serverUrl || '';
 }
 
 function bindSettings() {
@@ -734,6 +732,13 @@ function bindSettings() {
         Storage.setApiKey(key);
         showToast('✅ API Key 已保存');
         if (key) fetchDailyAdvice();
+    });
+
+    // 服务器地址失焦时自动保存
+    document.getElementById('s-sync-server').addEventListener('blur', () => {
+        const sync = Storage.getSyncConfig();
+        sync.serverUrl = document.getElementById('s-sync-server').value.trim();
+        Storage.setSyncConfig(sync);
     });
 
     document.getElementById('btn-sync-up').addEventListener('click', syncUpload);
@@ -765,15 +770,31 @@ function setSyncStatus(msg) {
 }
 
 function getServerUrl() {
-    // 优先用设置里填写的地址，其次用 window.location.origin（同域部署）
     const sync = Storage.getSyncConfig();
-    return (sync.serverUrl || window.location.origin).replace(/\/$/, '');
+    if (sync.serverUrl) return sync.serverUrl.replace(/\/$/, '');
+    // file:// 直接打开时 origin 是 null，需要配置服务器地址
+    const origin = window.location.origin;
+    if (!origin || origin === 'null' || origin.startsWith('file')) return '';
+    return origin;
+}
+
+function requireServerUrl() {
+    const url = getServerUrl();
+    if (!url) {
+        showToast('请先在设置中填写服务器地址');
+        // 跳转到设置页
+        document.querySelector('.tab[data-page="settings"]').click();
+        document.getElementById('s-sync-server').focus();
+        return null;
+    }
+    return url;
 }
 
 async function syncUpload() {
+    const serverUrl = requireServerUrl();
+    if (!serverUrl) return;
     setSyncStatus('上传中...');
     const userId = Storage.getUserId();
-    const serverUrl = getServerUrl();
 
     try {
         const resp = await fetch(`${serverUrl}/api/backup`, {
@@ -792,10 +813,11 @@ async function syncUpload() {
 }
 
 async function syncDownload() {
+    const serverUrl = requireServerUrl();
+    if (!serverUrl) return;
     if (!confirm('从云端恢复会覆盖本地数据，确认继续？')) return;
     setSyncStatus('恢复中...');
     const userId = Storage.getUserId();
-    const serverUrl = getServerUrl();
 
     try {
         const resp = await fetch(`${serverUrl}/api/restore/${userId}`);

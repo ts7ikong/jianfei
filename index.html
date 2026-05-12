@@ -341,10 +341,11 @@
 
             <div class="card settings-card">
                 <div class="settings-title">云端同步</div>
-                <p class="tip-text" style="text-align:left;margin-bottom:14px">
-                    数据加密备份到云端，换手机也不丢失
-                </p>
-                <div class="sync-btns">
+                <div class="setting-row">
+                    <label>服务器地址</label>
+                    <input type="url" id="s-sync-server" class="s-input" placeholder="https://your-server.com">
+                </div>
+                <div class="sync-btns" style="margin-top:12px">
                     <button class="btn-secondary" id="btn-sync-up">⬆ 上传备份</button>
                     <button class="btn-secondary" id="btn-sync-down">⬇ 恢复数据</button>
                 </div>
