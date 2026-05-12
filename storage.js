@@ -22,13 +22,28 @@ const Storage = (() => {
 
     // ── API Key ──────────────────────────────────────────
     function getApiKey() { return localStorage.getItem(KEYS.API_KEY) || ''; }
-    function setApiKey(k) { localStorage.setItem(KEYS.API_KEY, k); }
+
+    // 用 API Key 的哈希作为用户唯一 ID，换设备输同一个 Key 就能找回数据
+    function hashApiKey(key) {
+        let h1 = 0x811c9dc5, h2 = 0xdeadbeef;
+        for (let i = 0; i < key.length; i++) {
+            const c = key.charCodeAt(i);
+            h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
+            h2 = Math.imul(h2 ^ c, 0x01000193) >>> 0;
+        }
+        return 'k' + h1.toString(36) + h2.toString(36);
+    }
+
+    function setApiKey(k) {
+        localStorage.setItem(KEYS.API_KEY, k);
+        if (k) localStorage.setItem(KEYS.USER_ID, hashApiKey(k));
+    }
 
     // ── Sync config ──────────────────────────────────────
     function getSyncConfig() { return _get(KEYS.SYNC) || { serverUrl: '' }; }
     function setSyncConfig(c) { _set(KEYS.SYNC, c); }
 
-    // ── 用户唯一ID（首次自动生成，用于在服务器区分不同用户）──
+    // ── 用户唯一ID（由 API Key 哈希派生；若尚未设置 Key 则用随机 ID）──
     function getUserId() {
         let id = localStorage.getItem(KEYS.USER_ID);
         if (!id) {

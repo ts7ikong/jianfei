@@ -21,8 +21,26 @@
         </div>
 
         <div class="steps-container">
+            <!-- Step 0 — 欢迎 / 已有数据恢复 -->
+            <div class="step active" data-step="0">
+                <h2>你好 👋</h2>
+                <p class="step-hint">第一次使用，还是在其他设备上用过？</p>
+                <div style="display:flex;flex-direction:column;gap:12px;margin-top:28px">
+                    <button class="btn-primary" id="ob-new-user" style="width:100%">✨ 全新开始</button>
+                    <button class="btn-secondary" id="ob-has-data" style="width:100%">📲 已有数据，换设备恢复</button>
+                </div>
+                <div id="ob-restore-form" class="hidden" style="margin-top:24px">
+                    <p class="tip-text" style="margin-bottom:12px">输入你的通义千问 API Key，即可从云端恢复全部数据</p>
+                    <div class="form-group">
+                        <input type="password" id="ob-restore-key" placeholder="sk-..." autocomplete="off">
+                    </div>
+                    <button class="btn-primary" id="ob-do-restore" style="width:100%">恢复我的数据</button>
+                    <p id="ob-restore-msg" style="text-align:center;margin-top:10px;font-size:13px;color:var(--text-secondary);min-height:1.2em"></p>
+                </div>
+            </div>
+
             <!-- Step 1 -->
-            <div class="step active" data-step="1">
+            <div class="step" data-step="1">
                 <h2>基本信息</h2>
                 <div class="form-group">
                     <label>你的名字</label>
@@ -125,7 +143,7 @@
             </div>
         </div>
 
-        <div class="ob-footer">
+        <div class="ob-footer" id="ob-footer-nav">
             <button id="ob-back" class="btn-ghost hidden">上一步</button>
             <div class="step-dots">
                 <span class="dot active"></span>

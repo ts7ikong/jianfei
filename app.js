@@ -23,7 +23,7 @@ let obDeficit = 500;
 function showOnboarding() {
     document.getElementById('onboarding').classList.remove('hidden');
     document.getElementById('app').classList.add('hidden');
-    renderObStep(1);
+    renderObStep(0);
 }
 
 function renderObStep(step) {
@@ -31,13 +31,17 @@ function renderObStep(step) {
     document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
     document.querySelector(`.step[data-step="${step}"]`).classList.add('active');
 
-    document.querySelectorAll('.dot').forEach((d, i) => {
-        d.classList.toggle('active', i < step);
-    });
+    // step 0 是欢迎页，不显示底部导航
+    const footerNav = document.getElementById('ob-footer-nav');
+    footerNav.classList.toggle('hidden', step === 0);
 
-    document.getElementById('ob-back').classList.toggle('hidden', step === 1);
-    const nextBtn = document.getElementById('ob-next');
-    nextBtn.textContent = step === 4 ? '开始使用' : '下一步';
+    if (step > 0) {
+        document.querySelectorAll('.dot').forEach((d, i) => {
+            d.classList.toggle('active', i < step);
+        });
+        document.getElementById('ob-back').classList.toggle('hidden', step === 1);
+        document.getElementById('ob-next').textContent = step === 4 ? '开始使用' : '下一步';
+    }
 
     if (step === 3) updateObTDEE();
 }
@@ -74,6 +78,54 @@ function validateObStep(step) {
     return true;
 }
 
+document.getElementById('ob-new-user').addEventListener('click', () => {
+    renderObStep(1);
+});
+
+document.getElementById('ob-has-data').addEventListener('click', () => {
+    document.getElementById('ob-restore-form').classList.remove('hidden');
+    document.getElementById('ob-restore-key').focus();
+});
+
+document.getElementById('ob-do-restore').addEventListener('click', () => {
+    const key = document.getElementById('ob-restore-key').value.trim();
+    if (!key) { setObRestoreMsg('请输入 API Key'); return; }
+    restoreForOnboarding(key);
+});
+
+async function restoreForOnboarding(key) {
+    const btn = document.getElementById('ob-do-restore');
+    setObRestoreMsg('正在连接云端...');
+    btn.disabled = true;
+
+    Storage.setApiKey(key);
+    const userId = Storage.getUserId();
+    const origin = window.location.origin;
+    const serverUrl = (!origin || origin === 'null' || origin.startsWith('file')) ? '' : origin;
+
+    if (!serverUrl) {
+        btn.disabled = false;
+        setObRestoreMsg('请通过服务器地址访问页面，不支持直接打开文件');
+        return;
+    }
+
+    try {
+        const resp = await fetch(`${serverUrl}/api/restore/${userId}`);
+        const result = await resp.json();
+        if (!resp.ok) throw new Error(result.error || `服务器返回 ${resp.status}`);
+        Storage.importAll(result);
+        setObRestoreMsg('✅ 恢复成功，正在进入...');
+        setTimeout(() => showApp(), 800);
+    } catch (e) {
+        btn.disabled = false;
+        setObRestoreMsg('❌ ' + e.message);
+    }
+}
+
+function setObRestoreMsg(msg) {
+    document.getElementById('ob-restore-msg').textContent = msg;
+}
+
 document.getElementById('ob-next').addEventListener('click', () => {
     if (!validateObStep(obStep)) return;
     if (obStep < 4) {
@@ -86,6 +138,8 @@ document.getElementById('ob-next').addEventListener('click', () => {
         const apiKey = document.getElementById('ob-apikey').value.trim();
         if (apiKey) Storage.setApiKey(apiKey);
         showApp();
+        // 完成初始设置后静默上传到云端
+        if (Storage.getApiKey()) setTimeout(silentSyncUpload, 1000);
     }
 });
 
@@ -770,7 +824,10 @@ function bindSettings() {
         const key = document.getElementById('s-apikey').value.trim();
         Storage.setApiKey(key);
         showToast('✅ API Key 已保存');
-        if (key) fetchDailyAdvice();
+        if (key) {
+            fetchDailyAdvice();
+            silentSyncUpload(); // 绑定新 userId 后立即同步一次
+        }
     });
 
     // 服务器地址失焦时自动保存
@@ -871,6 +928,19 @@ async function syncDownload() {
         setSyncStatus('❌ 恢复失败：' + e.message);
         showToast('恢复失败：' + e.message);
     }
+}
+
+async function silentSyncUpload() {
+    const serverUrl = getServerUrl();
+    if (!serverUrl || !Storage.getApiKey()) return;
+    const userId = Storage.getUserId();
+    try {
+        await fetch(`${serverUrl}/api/backup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, data: Storage.exportAll() }),
+        });
+    } catch { /* 静默失败，不打扰用户 */ }
 }
 
 // ── Utilities ─────────────────────────────────────────────
