@@ -744,7 +744,8 @@ function loadSettingsPage() {
     if (apiKey) document.getElementById('s-apikey').value = apiKey;
 
     const sync = Storage.getSyncConfig();
-    document.getElementById('s-sync-server').value = sync.serverUrl || '';
+    const syncServerEl = document.getElementById('s-sync-server');
+    if (syncServerEl) syncServerEl.value = sync.serverUrl || '';
 }
 
 function bindSettings() {
