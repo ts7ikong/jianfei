@@ -190,7 +190,7 @@ const App = (() => {
       ${renderSymptomRow("头皮出油", record.scalp?.oiliness, "scalp_oiliness")}
       ${renderSymptomRow("掉发", record.scalp?.hair_shedding, "hair_shedding")}
       ${renderSymptomRow("口干", record.other?.dry_mouth, "dry_mouth")}
-      ${renderSymptomRow("阴囊潮湿", record.other?.scrotal_moisture, "scrotal_moisture")}
+      ${renderSymptomRow("干燥管理", record.other?.scrotal_moisture, "scrotal_moisture")}
       ${record.skin?.new_pimples != null ? `<div class="symptom-row"><span>新大痘</span><span>${record.skin.new_pimples}个</span></div>` : ""}
     </div>
     <button class="btn btn-outline btn-sm mt-8" id="btn-morning2">📝 录入/修改症状</button>
@@ -651,7 +651,7 @@ const App = (() => {
         { values: face_oil,  color: "#ef4444", label: "脸出油" },
         { values: scalp_oil, color: "#f59e0b", label: "头皮出油" },
         { values: dry_mouth, color: "#8b5cf6", label: "口干" },
-        { values: scrotal,   color: "#3b82f6", label: "阴囊潮湿" },
+        { values: scrotal,   color: "#3b82f6", label: "干燥管理" },
       ],
     });
     Charts.drawBarChart(document.getElementById("chart-completion"), {
@@ -884,7 +884,7 @@ const App = (() => {
     <div class="modal-section">
       <div class="section-label">其他症状</div>
       ${renderScaleRow("口干", "m-drymouth", r.other?.dry_mouth, PLAN.score_labels.dry_mouth)}
-      ${renderScaleRow("阴囊潮湿", "m-scrotal", r.other?.scrotal_moisture, PLAN.score_labels.scrotal_moisture)}
+      ${renderScaleRow("干燥管理", "m-scrotal", r.other?.scrotal_moisture, PLAN.score_labels.scrotal_moisture)}
     </div>
 
     <div class="modal-section">
