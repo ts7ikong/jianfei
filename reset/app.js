@@ -862,13 +862,13 @@ const App = (() => {
       <div class="sleep-duration" id="sleep-calc">
         ${r.sleep.duration_hours ? `睡眠时长: ${Math.floor(r.sleep.duration_hours)}h${Math.round((r.sleep.duration_hours%1)*60)}m` : ""}
       </div>
-      ${renderScaleRow("睡眠质量", "m-sq", r.sleep.quality, PLAN.score_labels.sleep_quality)}
-      ${renderScaleRow("起床精神", "m-energy", r.sleep.energy, PLAN.score_labels.energy_level)}
+      ${renderScaleRow("睡眠质量", "m-sq", r.sleep.quality, PLAN.score_labels.sleep_quality, PLAN.scale_hints.sleep_quality)}
+      ${renderScaleRow("起床精神", "m-energy", r.sleep.energy, PLAN.score_labels.energy_level, PLAN.scale_hints.energy_level)}
     </div>
 
     <div class="modal-section">
       <div class="section-label">皮肤/头皮</div>
-      ${renderScaleRow("脸部出油", "m-face-oil", r.skin?.face_oiliness, PLAN.score_labels.face_oiliness)}
+      ${renderScaleRow("脸部出油", "m-face-oil", r.skin?.face_oiliness, PLAN.score_labels.face_oiliness, PLAN.scale_hints.face_oiliness)}
       <div class="form-field mt-8">
         <label>新增大痘数量</label>
         <div class="pimple-row">
@@ -877,14 +877,14 @@ const App = (() => {
           `).join("")}
         </div>
       </div>
-      ${renderScaleRow("头皮出油", "m-scalp-oil", r.scalp?.oiliness, PLAN.score_labels.scalp_oiliness)}
-      ${renderScaleRow("掉发自评", "m-hair", r.scalp?.hair_shedding, PLAN.score_labels.hair_shedding)}
+      ${renderScaleRow("头皮出油", "m-scalp-oil", r.scalp?.oiliness, PLAN.score_labels.scalp_oiliness, PLAN.scale_hints.scalp_oiliness)}
+      ${renderScaleRow("掉发自评", "m-hair", r.scalp?.hair_shedding, PLAN.score_labels.hair_shedding, PLAN.scale_hints.hair_shedding)}
     </div>
 
     <div class="modal-section">
       <div class="section-label">其他症状</div>
-      ${renderScaleRow("口干", "m-drymouth", r.other?.dry_mouth, PLAN.score_labels.dry_mouth)}
-      ${renderScaleRow("干燥管理", "m-scrotal", r.other?.scrotal_moisture, PLAN.score_labels.scrotal_moisture)}
+      ${renderScaleRow("口干", "m-drymouth", r.other?.dry_mouth, PLAN.score_labels.dry_mouth, PLAN.scale_hints.dry_mouth)}
+      ${renderScaleRow("干燥管理", "m-scrotal", r.other?.scrotal_moisture, PLAN.score_labels.scrotal_moisture, PLAN.scale_hints.scrotal_moisture)}
     </div>
 
     <div class="modal-section">
@@ -952,9 +952,9 @@ const App = (() => {
     });
   }
 
-  function renderScaleRow(label, id, currentVal, labels) {
+  function renderScaleRow(label, id, currentVal, labels, hint) {
     return `<div class="scale-row">
-      <div class="scale-label">${label}</div>
+      <div class="scale-label">${label}${hint ? `<span class="scale-hint">${hint}</span>` : ""}</div>
       <div class="scale-btns" id="${id}">
         ${[1,2,3,4,5].map(n => `
           <button class="scale-btn ${currentVal === n ? "active" : ""}" data-scale="${id}" data-val="${n}">

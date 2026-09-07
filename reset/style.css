@@ -450,7 +450,8 @@ canvas { display: block; width: 100%; }
 
 /* Scale buttons */
 .scale-row { margin-bottom: 12px; }
-.scale-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.scale-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: flex; flex-direction: column; gap: 2px; }
+.scale-hint { font-size: 11px; font-weight: 400; color: var(--text-muted); }
 .scale-btns { display: flex; gap: 4px; }
 .scale-btn {
   flex: 1; padding: 8px 2px;
