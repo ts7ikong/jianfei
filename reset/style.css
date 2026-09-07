@@ -453,18 +453,30 @@ canvas { display: block; width: 100%; }
 .scale-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
 .scale-btns { display: flex; gap: 4px; }
 .scale-btn {
-  flex: 1; padding: 6px 2px;
+  flex: 1; padding: 8px 2px;
   border: 1.5px solid var(--border); border-radius: var(--radius-sm);
   background: var(--bg); cursor: pointer;
   text-align: center; transition: all .15s;
-  color: var(--text);
+  color: var(--text); min-height: 52px;
 }
-.scale-btn.active { border-color: var(--primary); background: #10b98120; }
-.scale-n    { font-size: 15px; font-weight: 700; }
-.scale-desc { font-size: 9px; color: var(--text-muted); line-height: 1.2; margin-top: 2px; }
-.scale-btn.active .scale-desc { color: var(--primary); }
+.scale-btn:active { transform: scale(.93); }
+.scale-btn.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 8px #10b98145;
+}
+.scale-n    { font-size: 16px; font-weight: 800; }
+.scale-desc { font-size: 9px; color: var(--text-muted); line-height: 1.2; margin-top: 3px; }
+.scale-btn.active .scale-desc { color: rgba(255,255,255,.85); }
 
 .sleep-duration { font-size: 13px; color: var(--primary); font-weight: 600; margin: 4px 0 8px; height: 18px; }
+
+.posture-hint {
+  font-size: 12px; color: var(--text-muted); line-height: 1.6;
+  background: var(--bg); border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
 
 .pimple-row { display: flex; gap: 6px; }
 .count-btn {

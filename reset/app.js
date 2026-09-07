@@ -888,9 +888,15 @@ const App = (() => {
     </div>
 
     <div class="modal-section">
-      <div class="section-label">体态 (今日感觉)</div>
-      ${renderScaleRow("肩膀状态", "m-shoulder", r.posture?.shoulder, PLAN.score_labels.shoulder)}
-      ${renderScaleRow("驼背程度", "m-hunchback", r.posture?.hunchback, PLAN.score_labels.hunchback)}
+      <div class="section-label">体态</div>
+      <div class="posture-hint">
+        📸 体态变化靠照片对比，不靠每日感觉。<br>
+        请在 Day 1 / 7 / 14 / 21 / 30 拍正面+侧面照片存档。
+      </div>
+      <label class="toggle-row mt-8">
+        <input type="checkbox" id="m-posture-aware" ${r.posture?.aware ? "checked" : ""}>
+        <span>今天注意了体态（走路/坐姿挺直）</span>
+      </label>
     </div>
 
     <button class="btn btn-primary btn-full" id="btn-save-morning">💾 保存</button>`;
@@ -937,8 +943,7 @@ const App = (() => {
       r.other.dry_mouth        = getScaleVal("m-drymouth");
       r.other.scrotal_moisture = getScaleVal("m-scrotal");
 
-      r.posture.shoulder  = getScaleVal("m-shoulder");
-      r.posture.hunchback = getScaleVal("m-hunchback");
+      r.posture.aware = document.getElementById("m-posture-aware")?.checked || false;
 
       await saveRecord(r);
       toast("✅ 早晨数据已保存");
